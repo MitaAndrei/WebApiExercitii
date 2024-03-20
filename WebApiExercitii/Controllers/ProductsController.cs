@@ -16,7 +16,7 @@ namespace WebApiExercitii.Controllers
                 Id = Guid.NewGuid(),
                 Name = "Product 1",
                 Description = "First Product",
-                Ratings = new[] {1,3,2,5}
+                Ratings = new[] {5,3,2,5}
 
 
             },
@@ -90,7 +90,8 @@ namespace WebApiExercitii.Controllers
         [HttpGet("get-by-keyword")]
         public Product[] GetByKeyword(string keyword)
         {
-            List<Product> prod = new List<Product>();
+            HashSet<Product> prod = new();
+
             foreach (var product in _products)
             {
                 var propertyValues = product.GetType()
@@ -109,33 +110,38 @@ namespace WebApiExercitii.Controllers
             return prod.ToArray();
         }
 
-        [HttpGet("avg-rating-asc")]
-        public Product[] SortRatingAsc()
+        [HttpGet("sort-by-avg-rating/{ascending}")]
+        public IActionResult SortByAverageRating(bool ascending = true)
         {
             List<Product> sorted = new List<Product>(_products);
-            if (_products.Count > 0)
-            {
-                for (int i = 0; i < sorted.Count; i++)
-                {
-                    var product = sorted[i];
-                    double avgRating = product.Ratings.Sum() / product.Ratings.Length;
-                    for (int j = 0; j < sorted.Count; j++)
-                    {
-                        var other = sorted[j];
-                        double otherAvg = other.Ratings.Sum() / other.Ratings.Length;
-                        if (avgRating < otherAvg)
-                            (sorted[i], sorted[j]) = (sorted[j], sorted[i]);
 
-                    }
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                var product = sorted[i];
+                double avgRating = product.Ratings.Sum() / product.Ratings.Length;
+                for (int j = 0; j < sorted.Count; j++)
+                {
+                    var other = sorted[j];
+                    double otherAvg = other.Ratings.Sum() / other.Ratings.Length;
+                    if (avgRating < otherAvg)
+                        (sorted[i], sorted[j]) = (sorted[j], sorted[i]);
 
                 }
+
             }
-            return sorted.ToArray();
+
+            if (ascending)
+                return Ok(sorted.ToArray());
+            else
+            {
+                sorted.Reverse();
+                return Ok(sorted.ToArray());
+            }
+
 
         }
 
         [HttpGet("get-most-recent-product")]
-
         public IActionResult GetMostRecentProduct()
         {
 

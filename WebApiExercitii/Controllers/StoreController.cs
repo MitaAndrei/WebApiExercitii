@@ -92,10 +92,9 @@ namespace WebApiExercitii.Controllers
         }
 
         [HttpGet("filter-by-keyword")]
-
         public IActionResult FilterByKeyword(string keyword)
         {
-            List<Store> res = new List<Store>();
+            List<Store> res = new();
             foreach (var existingStore in _stores)
             {
                 if (existingStore.Name.Contains(keyword))
@@ -105,14 +104,26 @@ namespace WebApiExercitii.Controllers
             return Ok(res.ToArray());
         }
 
-        [HttpGet("get-by-country-city")]
-
-        public IActionResult GetByCountryOrCity(string keyword)
+        [HttpGet("get-by-country")]
+        public IActionResult GetByCountry(string keyword)
         {
-            List<Store> res = new List<Store>();
+            List<Store> res = new();
             foreach (var existingStore in _stores)
             {
-                if (existingStore.Country == keyword || existingStore.City == keyword)
+                if (existingStore.Country.Contains(keyword) )
+                    res.Add(existingStore);
+            }
+
+            return Ok(res.ToArray());
+        }
+
+        [HttpGet("get-by-city")]
+        public IActionResult GetByCity(string keyword)
+        {
+            List<Store> res = new();
+            foreach (var existingStore in _stores)
+            {
+                if (existingStore.City.Contains(keyword))
                     res.Add(existingStore);
             }
 
@@ -120,34 +131,13 @@ namespace WebApiExercitii.Controllers
         }
 
         [HttpGet("get-by-sorted-income")]
-
         public IActionResult GetBySortedIncome()
         {
-            List<Store> sorted = new List<Store>(_stores);
-
-
-
-            if (_stores.Count > 0)
-            {
-                for (int i = 0; i < sorted.Count; i++)
-                {
-                    var store = sorted[i];
-                    
-                    for (int j = 0; j < sorted.Count; j++)
-                    {
-                        var other = sorted[j];
-                        
-                        if (store.MonthlyIncome < other.MonthlyIncome)
-                            (sorted[i], sorted[j]) = (sorted[j], sorted[i]);
-                    }
-
-                }
-            }
-            return Ok(sorted.ToArray());
+            return Ok(_stores.OrderBy(store => store.MonthlyIncome).ToArray());
         }
 
-        [HttpGet("get-oldest-store")]
 
+        [HttpGet("get-oldest-store")]
         public IActionResult GetOldestStore()
         {
 
