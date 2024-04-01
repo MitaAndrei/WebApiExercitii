@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Globalization;
+using WebApiExercitii.Data;
+using WebApiExercitii.dto;
 using WebApiExercitii.Models;
 
 namespace WebApiExercitii.Controllers
@@ -10,7 +12,7 @@ namespace WebApiExercitii.Controllers
     [ApiController]
     public class StoreController : ControllerBase
     {
-        public static readonly List<Store> _stores = new List<Store>
+        /*public static readonly List<Store> _stores = new List<Store>
         {
             new Store
             {
@@ -37,103 +39,89 @@ namespace WebApiExercitii.Controllers
             }
         };
 
-        [HttpGet]
-        public Store[] GetAllStores()
+
+
+*/
+
+        RetailDbContext context;
+        public StoreController(RetailDbContext context)
         {
-            return _stores.ToArray();
+            this.context = context;
+        }
+
+        [HttpGet]
+        public StoreDto[] GetAllStores()
+        {
+            return context.Stores.Select(s => new StoreDto(s)).ToArray();
         }
 
         [HttpPost]
-        public IActionResult CreateStore([FromBody]Store store)
+        public IActionResult CreateStore([FromBody]StoreDto store)
         {
-            if (store == null)
+            if (store != null)
             {
-                return BadRequest("Store is null");
+                context.Stores.Add(new Store(store));
+                context.SaveChanges();
+                return Ok();
             }
-            foreach(var existingStore in _stores)
-            {
-                if (store.Id ==  existingStore.Id)
-                {
-                    return BadRequest("Store with the same id already exists");
-                }
-            }
-            _stores.Add(store);
-            return Ok(store);
+            return BadRequest("product is null");
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteStore([FromBody] Guid id)
+        public IActionResult DeleteStore(Guid id)
         {
-
-            foreach (var existingStore in _stores)
+            try
             {
-                if (id == existingStore.Id)
-                {
-                    _stores.Remove(existingStore);
-                    return Ok();
-                }
+                context.Stores.Remove(context.Stores.Single(s => s.Id == id));
+                context.SaveChanges();
+                return Ok();
             }
-            return NotFound("Store not found");
+            catch (InvalidOperationException)
+            {
+                return NotFound();
+            }
+
         }
 
         [HttpPut("transfer-ownership/{storeId}")]
         public IActionResult TransferOwnership(Guid storeId, [FromBody] string name)
         {
-
-            foreach (var existingStore in _stores)
+            try
             {
-                if (storeId == existingStore.Id)
-                {
-                    existingStore.OwnerName = name;
-                    return Ok();
-                }
+                var entity = context.Stores.Single(s => s.Id == storeId);
+                entity.OwnerName = name;
+                context.Update(entity);
+                context.SaveChanges();
+                return Ok();
             }
-            return NotFound("Store not found");
+            catch(InvalidOperationException)
+            {
+                return NotFound("No store with such id");
+            }
         }
 
-        [HttpGet("filter-by-keyword")]
-        public IActionResult FilterByKeyword(string keyword)
+        [HttpGet("search/{keyword}")]
+        public IActionResult Search(string keyword)
         {
-            List<Store> res = new();
-            foreach (var existingStore in _stores)
-            {
-                if (existingStore.Name.Contains(keyword))
-                    res.Add(existingStore);
-            }
-
-            return Ok(res.ToArray());
+            return Ok(context.Stores.Where(p => p.Name.Contains(keyword) || p.Country.Contains(keyword) || p.City.Contains(keyword)));
         }
 
-        [HttpGet("get-by-country")]
+/*        [HttpGet("get-by-country")]
         public IActionResult GetByCountry(string keyword)
         {
-            List<Store> res = new();
-            foreach (var existingStore in _stores)
-            {
-                if (existingStore.Country.Contains(keyword) )
-                    res.Add(existingStore);
-            }
-
-            return Ok(res.ToArray());
+            return Ok(context.Stores.Where(p => p.Country.Contains(keyword)));
         }
 
         [HttpGet("get-by-city")]
         public IActionResult GetByCity(string keyword)
         {
-            List<Store> res = new();
-            foreach (var existingStore in _stores)
-            {
-                if (existingStore.City.Contains(keyword))
-                    res.Add(existingStore);
-            }
-
-            return Ok(res.ToArray());
-        }
+            return Ok(context.Stores.Where(p => p.City.Contains(keyword)));
+        }*/
 
         [HttpGet("get-by-sorted-income")]
         public IActionResult GetBySortedIncome()
         {
-            return Ok(_stores.OrderBy(store => store.MonthlyIncome).ToArray());
+            return Ok(context.Stores.OrderBy(store => store.MonthlyIncome).ToArray());
         }
 
 
@@ -141,19 +129,37 @@ namespace WebApiExercitii.Controllers
         public IActionResult GetOldestStore()
         {
 
-            if(_stores.Count > 0)
+            if (context.Stores.Any())
             {
-                Store oldest = _stores[0];
-                foreach(var store in _stores)
-                {
-                    if (store.ActiveSince <  oldest.ActiveSince)
-                        oldest = store;
-                }
-                return Ok(oldest);
+                return Ok(context.Stores.OrderBy(s => s.ActiveSince).First());
             }
-            return BadRequest("There are no stores.");
+            return BadRequest("there are no stores.");
         }
+
+        [HttpPut("edit/{storeId}")]
+        public IActionResult Edit(Guid storeId, [FromBody] StoreDto store)
+        {
+
+            try
+            {
+                var entity = context.Stores.Single(p => p.Id == storeId);
+                entity.Name = store.Name;
+                entity.City = store.City;
+                entity.Country = store.Country;
+                entity.MonthlyIncome = store.MonthlyIncome;
+                entity.OwnerName = store.OwnerName;
+                context.Stores.Update(entity);
+                context.SaveChanges();
+                return Ok();
+            }
+            catch (InvalidOperationException)
+            {
+                return NotFound("No product with such id");
+            }
+        }
+    
     }
+
 
 
 

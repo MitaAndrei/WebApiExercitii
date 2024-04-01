@@ -1,4 +1,6 @@
-﻿namespace WebApiExercitii.Models
+﻿using WebApiExercitii.dto;
+
+namespace WebApiExercitii.Models
 {
     public class Product
     {
@@ -9,10 +11,22 @@
 
         public DateTime CreatedOn { get; set; }
 
+        public List<Store> Stores {  get; set; }
+        //public List<Inventory> Inventories { get; set; }
         public Product()
         {
             CreatedOn = DateTime.Now;
         }
+        public Product(ProductDto p)
+        {
+            Id = new Guid();
+            Name = p.Name;
+            Description = p.Description;
+            Ratings = p.Ratings;
+            CreatedOn = DateTime.Now;
+            //Inventories = p.Inventories;
+        }
+
     }
 }
 
